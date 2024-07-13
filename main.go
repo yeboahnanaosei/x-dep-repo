@@ -43,23 +43,28 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println()
 				fmt.Println()
 				startDeployment(payload)
-				return
 			}
+			return
+
 		case "deployment":
 			fmt.Println("Processing a deployment...")
 			fmt.Println()
 			fmt.Println()
 			fmt.Println()
 			processDeployment(payload)
+			return
+
 		case "deployment_status":
 			fmt.Println("New deployment status")
 			json.NewEncoder(os.Stdout).Encode(payload)
 			fmt.Println()
 			fmt.Println()
 			fmt.Println()
+			return
 		}
 
 		_, _ = w.Write([]byte("OK"))
+		return
 	}
 	_, _ = w.Write([]byte("Hello World!"))
 }
