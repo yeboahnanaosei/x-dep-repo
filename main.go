@@ -39,7 +39,7 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 		switch strings.ToLower(r.Header.Get("x-github-event")) {
 		case "pull_request":
 			if payload["action"].(string) == "closed" && payload["pull_request"].(map[string]any)["merged"].(bool) {
-				startDeployment(payload["pull_request"].(map[string]any))
+				startDeployment(payload)
 				_, _ = w.Write([]byte("A pull request was merged! A deployment should start now..."))
 				return
 			}
@@ -50,10 +50,10 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("Hello World!"))
 }
 
-func startDeployment(pullRequest map[string]any) {
-	user := pullRequest["user"].(map[string]any)["login"].(string)
-	repo := pullRequest["repository"].(map[string]any)["full_name"].(string)
-	ref := pullRequest["head"].(map[string]any)["sha"].(string)
+func startDeployment(payload map[string]any) {
+	user := payload["pull_request"].(map[string]any)["user"].(map[string]any)["login"].(string)
+	repo := payload["repository"].(map[string]any)["full_name"].(string)
+	ref := payload["pull_request"].(map[string]any)["head"].(map[string]any)["sha"].(string)
 	env := "dev"
 	desc := "Just a deployment"
 
