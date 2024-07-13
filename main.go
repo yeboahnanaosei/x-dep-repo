@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/google/go-github/v63/github"
@@ -29,13 +28,6 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent(" ", "   ")
-		if err := enc.Encode(payload); err != nil {
-			_, _ = w.Write([]byte(err.Error()))
-			return
-		}
-
 		switch strings.ToLower(r.Header.Get("x-github-event")) {
 		case "pull_request":
 			if payload["action"].(string) == "closed" && payload["pull_request"].(map[string]any)["merged"].(bool) {
@@ -52,9 +44,9 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 
 func startDeployment(payload map[string]any) {
 	user := payload["pull_request"].(map[string]any)["user"].(map[string]any)["login"].(string)
-	repo := payload["repository"].(map[string]any)["full_name"].(string)
+	repo := payload["repository"].(map[string]any)["name"].(string)
 	ref := payload["pull_request"].(map[string]any)["head"].(map[string]any)["sha"].(string)
-	env := "dev"
+	env := "production"
 	desc := "Just a deployment"
 
 	deployment, res, err := client.Repositories.CreateDeployment(
