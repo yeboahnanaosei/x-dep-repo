@@ -105,7 +105,7 @@ func processDeployment(payload map[string]any) {
 	deployUser := payload["deployment"].(map[string]any)["creator"].(map[string]any)["login"].(string)
 	env := payload["deployment"].(map[string]any)["environment"].(string)
 	repo := payload["repository"].(map[string]any)["name"].(string)
-	deploymentID := payload["deployment"].(map[string]any)["id"].(int64)
+	deploymentID := int64(payload["deployment"].(map[string]any)["id"].(float64))
 
 	fmt.Printf("Deployment [%s] created by [%s] for environment [%s]\n", desc, deployUser, env)
 	time.Sleep(time.Second * 10)
