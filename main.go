@@ -38,15 +38,25 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 		switch strings.ToLower(r.Header.Get("x-github-event")) {
 		case "pull_request":
 			if payload["action"].(string) == "closed" && payload["pull_request"].(map[string]any)["merged"].(bool) {
+				fmt.Println("A pull request was merged! A deployment should start now...")
+				fmt.Println()
+				fmt.Println()
+				fmt.Println()
 				startDeployment(payload)
-				_, _ = w.Write([]byte("A pull request was merged! A deployment should start now..."))
 				return
 			}
-
 		case "deployment":
+			fmt.Println("Processing a deployment...")
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
 			processDeployment(payload)
 		case "deployment_status":
+			fmt.Println("New deployment status")
 			json.NewEncoder(os.Stdout).Encode(payload)
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
 		}
 
 		_, _ = w.Write([]byte("OK"))
@@ -79,7 +89,7 @@ func startDeployment(payload map[string]any) {
 		return
 	}
 
-	log.Println("Deployment created: ")
+	fmt.Println("Deployment created: ")
 	log.Println(deployment)
 	log.Println()
 	log.Println()
@@ -123,4 +133,10 @@ func processDeployment(payload map[string]any) {
 			Description: github.String("Deployment success"),
 		},
 	)
+
+	if err != nil {
+		log.Println(err)
+		log.Println(res.StatusCode)
+		return
+	}
 }
