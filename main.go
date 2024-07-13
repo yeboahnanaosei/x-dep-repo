@@ -72,7 +72,7 @@ func startDeployment(payload map[string]any) {
 	user := payload["pull_request"].(map[string]any)["user"].(map[string]any)["login"].(string)
 	repo := payload["repository"].(map[string]any)["name"].(string)
 	ref := github.String(payload["pull_request"].(map[string]any)["head"].(map[string]any)["sha"].(string))
-	env := github.String("production")
+	env := github.String("staging")
 	desc := github.String("Just a deployment")
 
 	deployment, res, err := client.Repositories.CreateDeployment(
