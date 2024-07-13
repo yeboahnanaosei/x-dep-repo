@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v63/github"
 	"golang.org/x/oauth2"
@@ -17,12 +19,9 @@ var client *github.Client
 
 func main() {
 	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GH_TOKEN")},
-	)
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: os.Getenv("GH_TOKEN")})
 	tc := oauth2.NewClient(ctx, ts)
 	client = github.NewClient(tc)
-	//client = github.NewClient(c)
 	http.HandleFunc("/", eventHandler)
 	log.Fatalln(http.ListenAndServe(":9922", nil))
 }
@@ -43,6 +42,11 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 				_, _ = w.Write([]byte("A pull request was merged! A deployment should start now..."))
 				return
 			}
+
+		case "deployment":
+			processDeployment(payload)
+		case "deployment_status":
+			json.NewEncoder(os.Stdout).Encode(payload)
 		}
 
 		_, _ = w.Write([]byte("OK"))
@@ -75,5 +79,48 @@ func startDeployment(payload map[string]any) {
 		return
 	}
 
+	log.Println("Deployment created: ")
 	log.Println(deployment)
+	log.Println()
+	log.Println()
+}
+
+func processDeployment(payload map[string]any) {
+	desc := payload["deployment"].(map[string]any)["description"].(string)
+	deployUser := payload["deployment"].(map[string]any)["creator"].(map[string]any)["login"].(string)
+	env := payload["deployment"].(map[string]any)["environment"].(string)
+	repo := payload["repository"].(map[string]any)["name"].(string)
+	deploymentID := payload["deployment"].(map[string]any)["id"].(int64)
+
+	fmt.Printf("Deployment [%s] created by [%s] for environment [%s]\n", desc, deployUser, env)
+	time.Sleep(time.Second * 10)
+	_, res, err := client.Repositories.CreateDeploymentStatus(
+		context.Background(),
+		deployUser,
+		repo,
+		deploymentID,
+		&github.DeploymentStatusRequest{
+			State:       github.String("pending"),
+			Description: github.String("Deployment pending"),
+		},
+	)
+
+	if err != nil {
+		log.Println(err)
+		log.Println(res.StatusCode)
+		return
+	}
+
+	time.Sleep(time.Second * 10)
+
+	_, res, err = client.Repositories.CreateDeploymentStatus(
+		context.Background(),
+		deployUser,
+		repo,
+		deploymentID,
+		&github.DeploymentStatusRequest{
+			State:       github.String("success"),
+			Description: github.String("Deployment success"),
+		},
+	)
 }
