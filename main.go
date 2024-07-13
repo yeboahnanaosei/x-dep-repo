@@ -9,12 +9,19 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v63/github"
+	"golang.org/x/oauth2"
 )
 
 var client *github.Client
 
 func main() {
-	client = github.NewClient(nil)
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GH_TOKEN")},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client = github.NewClient(tc)
+	//client = github.NewClient(c)
 	http.HandleFunc("/", eventHandler)
 	log.Fatalln(http.ListenAndServe(":9922", nil))
 }
@@ -45,15 +52,20 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 func startDeployment(payload map[string]any) {
 	user := payload["pull_request"].(map[string]any)["user"].(map[string]any)["login"].(string)
 	repo := payload["repository"].(map[string]any)["name"].(string)
-	ref := payload["pull_request"].(map[string]any)["head"].(map[string]any)["sha"].(string)
-	env := "production"
-	desc := "Just a deployment"
+	ref := github.String(payload["pull_request"].(map[string]any)["head"].(map[string]any)["sha"].(string))
+	env := github.String("production")
+	desc := github.String("Just a deployment")
 
 	deployment, res, err := client.Repositories.CreateDeployment(
 		context.Background(),
 		user,
 		repo,
-		&github.DeploymentRequest{Ref: &ref, Environment: &env, Description: &desc},
+		&github.DeploymentRequest{
+			Ref:         ref,
+			Environment: env,
+			Description: desc,
+			AutoMerge:   github.Bool(false),
+		},
 	)
 
 	if err != nil {
